@@ -9,6 +9,7 @@
 #include <pruss_intc_mapping.h>
 #include <pthread.h>
 #include <time.h>
+#include <sys/resource.h>
 
 #define PRU_NUM	0   // using PRU0 for these examples
 
@@ -21,7 +22,8 @@ void usage(void)
 
 int main (int argc, char *argv[])
 {
-
+   setpriority(PRIO_PROCESS, 0, -20);
+   
    int delay_ms,block_size,operation_time_minutes,write_to_file; //delay in ms
    /* Load Arguments   */
    if ( (argc < 5) )
@@ -69,7 +71,7 @@ int main (int argc, char *argv[])
    const unsigned int ramLimit = (0x3FFF>>2);
 
    /* Timing */
-   time_t start_seconds;
+   time_t start_seconds,end_seconds;
    time(&start_seconds);
    unsigned int num_iterations = (unsigned int) ( (data_rate_kHz*1000.0)*operation_time_minutes*60.0 );
 
@@ -79,6 +81,9 @@ int main (int argc, char *argv[])
    unsigned int nexp=0;   // expected value of n
    unsigned int n=0;      // actual value of n
    unsigned int i=0;		  // Loop index of RAM
+
+   FILE *fp;
+   fp = fopen("data.txt","w");
 
    /* Start Test */
    do{
@@ -90,27 +95,29 @@ int main (int argc, char *argv[])
 
             nexp++; // increment expected n by block size
             k--;
-            printf("i = %d\tn =  %d\tnexp=%d\n",i,n,nexp-1);
+            // printf("i = %d\tn =  %d\tnexp=%d\n",i,n,nexp-1);
          }
          numBlocksRead++;
-         printf("Number of blocks read: %d\n",numBlocksRead);
+         // printf("Number of blocks read: %d\n",numBlocksRead);
       }
-   // }while(n==(nexp-1));
    }while((nexp<num_iterations)&(n==(nexp-1)));
 
+   fclose(fp);
 
-   time_t end_seconds;
    time(&end_seconds);
-
 
    double seconds = difftime(end_seconds,start_seconds);
 
-   printf("diff time =  %f [sec]\n",seconds);
+   if (n==(nexp-1)){
+      printf("\n[PASS]\n");
+   }else{
+      printf("\n[FAIL]\n");
+   }
 
-   printf("actual rate =  %f [kHz]\n",(1.0/1000.0)*((double)n)/seconds);
-   
-
-   printf("n =  %d\tnexp=%d\n\n",n,nexp-1);
+   printf("\nTest lasted for %f seconds\n\n",seconds);
+   printf("Expected rate = %f [kHz]\n",data_rate_kHz);
+   printf("Actual rate = %f [kHz]\n",(1.0/1000.0)*((double)n)/seconds);
+   printf("Data written: %d blocks (%d measurements)\n",numBlocksRead,nexp);
 
    /* Disable PRU and close memory mappings */
    prussdrv_pru_disable(PRU_NUM);
