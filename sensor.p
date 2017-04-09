@@ -13,8 +13,9 @@ MOV r2, 0x2000;    // Start of PRU0 RAM (where parameters from linux is read)
 LBBO    r7, r2, 0, 4     // value at address r2 into r5 w/ offset=4bytes and length=4bytes
 
 // Interrupt
-MOV r11, 1; 	// interrupt FLAG is in register r8
+MOV r11, 0; 		// number of blocks written (for interrupt)
 MOV r12, 0x10000	// STATIC - address of interrupt
+SBBO r11,r12,0,4 	// store r11 (initial block count of 0) at address r12 (0x10000)
 
 // Data
 MOV r1, 0; 	// n is in register r1
@@ -26,19 +27,20 @@ MOV r4, 0x3FFF
 MAINLOOP: //while(1)
 	MOV r3, r7 	// Size of the Block (k)
 
-FORLOOP:
+FORLOOP: // while(k > 0)
 
 	SBBO r1,r2,0,4 		// store r1 (n) at address r2 (A)
 	ADD r2,r2,4 		// A = A + 4
 	AND r2,r2,r4 		// reset A based on RAM limit
 	ADD r1,r1,1 		// n = n + 1
-	SUB r3,r3,1		// loop counter
+	SUB r3,r3,1			// loop counter
 	QBNE FORLOOP, r3, 0	// for loop end
 
-	// Send interrupt
-	SBBO r11,r12,0,4 		// store r11 (1) at address r12 (0x0)
+	// Send block count interrupt
+	ADD r11,r11,1			// Increment block count
+	SBBO r11,r12,0,4 		// store r11 (block count) at address r12 (0x0)
 	
-        // Here is the delay
+    // Here is the delay
 	MOV r0, r5
 
 DELAY:

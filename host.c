@@ -74,7 +74,7 @@ int main (int argc, char *argv[])
    unsigned int num_iterations = (unsigned int) ( (data_rate_kHz*1000.0)*operation_time_minutes*60.0 );
 
    /* Initialize Loop Variables */
-   unsigned int flags=0;  // For interrupt
+   unsigned int numBlocksRead=0;  // For interrupt
    unsigned int k;        // Block count
    unsigned int nexp=0;   // expected value of n
    unsigned int n=0;      // actual value of n
@@ -82,10 +82,7 @@ int main (int argc, char *argv[])
 
    /* Start Test */
    do{
-      flags = *ptr_1;
-      if(flags==1){
-         // INTERRUPT
-         *ptr_1 = 0; //clear interrupt
+      if(numBlocksRead<(*ptr_1)){ // INTERRUPT
          k=block_size;
          while(k>0){
             i=nexp&ramLimit; // impose RAM limit
@@ -95,7 +92,8 @@ int main (int argc, char *argv[])
             k--;
             printf("i = %d\tn =  %d\tnexp=%d\n",i,n,nexp-1);
          }
-         printf("\n");
+         numBlocksRead++;
+         printf("Number of blocks read: %d\n",numBlocksRead);
       }
    // }while(n==(nexp-1));
    }while((nexp<num_iterations)&(n==(nexp-1)));
