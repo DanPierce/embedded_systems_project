@@ -44,8 +44,8 @@ FORLOOP: // while(k > 0)
 	MOV r0, r5
 
 DELAY:
-	MOV r6, 100*1000
-	// each DELAYDELAY is a millisecond (with r6=100*1000)
+	MOV r6, 100//*1000
+	// each DELAYDELAY is a microsecond (with r6=100)
 	DELAYDELAY:
 		SUB r6,r6, 1
 		QBNE DELAYDELAY, r6,0 	// delay
