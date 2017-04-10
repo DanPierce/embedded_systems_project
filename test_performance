@@ -8,6 +8,7 @@ do
 	for RATE_kHz in 1000 1000 1000 1000 1000 1000 1000 1000 1000 1000
 	do
 		i=$(( i+1 ))
-		sudo ./host $RATE_kHz $BLOCK_SIZE $TEST_DURATION 1 $i
+		sudo ./host $RATE_kHz $BLOCK_SIZE $TEST_DURATION
 	done
+	sleep 1s
 done
