@@ -77,7 +77,7 @@ int main (int argc, char *argv[])
 
    const int ramLimit = (0x3FFF>>2);   // limit of PRU0 and PRU1 RAM (16KB)
    const int chunkLimit = ramLimit;    // limit of the chunks used to store data between writing to file
-   const int chunkSize = chunkLimit+1;    // limit of the chunks used to store data between writing to file
+   const int chunkSize = chunkLimit+1;    // size of the chunk array
 
    /* Initialize Loop Variables */
    int numBlocksRead=0;    // for interrupt
@@ -135,7 +135,7 @@ int main (int argc, char *argv[])
 
    while(fread(&num, sizeof(int), 1, fpr)){
       if ((num-oldNum)!=1){
-         printf("Missed: %d\n",num);
+         printf("(SKIP) between %d and %d\n",oldNum,num);
          pass = 0;
       }
       oldNum=num;
