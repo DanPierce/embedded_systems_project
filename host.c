@@ -15,8 +15,8 @@
 
 void usage(void)
 {
-   printf("\nUSAGE: host <Data Rate (kHz)> <Block Size> <Test Duration (min)>\n");
-   printf("\n\tExample: host 10 256 12\n");
+   printf("\n USAGE: host <Block Size> <Test Duration (min)>\n");
+   printf("\n\tExample: host 256 12\n");
    exit(1);
 }
 
@@ -28,20 +28,18 @@ int main (int argc, char *argv[])
    int data_rate_kHz,block_size,operation_time_minutes; // parameters
 
    /* Load Arguments   */
-   if ( (argc < 4) )
+   if ( (argc < 3) )
       usage();
 
-   data_rate_kHz = atoi(argv[1]);            // rate at which data is transferred
-   block_size = atoi(argv[2]);               // block size of data passing
-   operation_time_minutes = atoi(argv[3]);   // test duration in minutes
+   // data_rate_kHz = atoi(argv[1]);            // rate at which data is transferred
+   block_size = atoi(argv[1]);               // block size of data passing
+   operation_time_minutes = atoi(argv[2]);   // test duration in minutes
 
    /* Print parameters to screen */
    printf("\nOperation Parameters:\n\tData Rate: %d (kHz)\n\tBlock Size: %d\n\tTest Duration: %d (min)\n",
                            data_rate_kHz,block_size,operation_time_minutes);
 
-   int number_us_delays = (int) (1000.0 * ((double)block_size)/((double)data_rate_kHz)); // number of 1 microsecond delays of the PRU to acheive desired rate
-
-   int numSamples = data_rate_kHz*1000*operation_time_minutes*60; // maximum sample count value
+   int numSamples = 0xFFFF; //data_rate_kHz*1000*operation_time_minutes*60; // maximum sample count value
 
    printf("\tNumber of samples to read: %d\n\n",numSamples);
 
@@ -57,7 +55,7 @@ int main (int argc, char *argv[])
    }
 
    /* Write parameters to PRU   */
-   prussdrv_pru_write_memory(PRUSS0_PRU0_DATARAM, 0, &number_us_delays, 4);
+   // prussdrv_pru_write_memory(PRUSS0_PRU0_DATARAM, 0, &number_us_delays, 4);
    prussdrv_pru_write_memory(PRUSS0_PRU1_DATARAM, 0, &block_size, 4);
 
    /* Map PRU's INTC */
@@ -75,22 +73,47 @@ int main (int argc, char *argv[])
 
    const int ramLimit = (0x3FFF>>2);   // limit of PRU0 and PRU1 RAM (16KB)
    const int chunkLimit = ramLimit;    // limit of the chunks used to store data between writing to file
+   const int nibbleLimit = 0xF;    // limit of the chunks used to store data between writing to file
+
+   if (numSamples<chunkLimit)
+      numSamples=chunkLimit;
 
    /* Initialize Loop Variables */
    int k;                  // block count
    int numBlocksRead = 0;    // for interrupt
    int i = 0;                // loop index of RAM
-   int n = 0;                 // data read in
-   int cnt = 0;
+
+   printf("\nWaiting on first value...\n");
+   while( *ptr_0 == 0);        // wait for first value to be written
+
+   int n0 = (*(ptr_0+i));     // actual value of n (read memory for initial value)
+   int n = n0;
+   int nexp = n0;             // expected value of n
+   
+   int cnt = 0;               // total number of samples read
+
    int datChunk[chunkLimit];  // initialize array for temporary storage of data
 
    /* Open data file */
-   // FILE *fp;
-   // fp = fopen("data.txt","w");
+   FILE *fp;
+   fp = fopen("data.txt","w");
 
    /* Timing */
    time_t start_seconds,end_seconds; // time at start of test, time at end of test
    time(&start_seconds);   // Note: only precise to the second
+
+   printf("\nn0 = %d\n\n",n0);
+
+   // while(1){
+   //    int j=0;
+   //    while (j<10){
+   //       printf("\nptr_0 + %d = %d",j,*(ptr_0+j));
+   //       j++;
+   //    }
+   //    printf("\n");
+   //    sleep(1);
+   // }
+
 
    /* Start Test */
    do{
@@ -99,30 +122,40 @@ int main (int argc, char *argv[])
          k=block_size;
          while(k>0){
             i=cnt&ramLimit; // impose RAM limit
+            nexp = nexp&nibbleLimit;
+
             n=(*(ptr_0+i)); // read memory
             
-            printf("\nn = %d\n",n);
-            
-            datChunk[cnt&chunkLimit] = n; // Save data chunk for later writing to file
+            datChunk[nexp&chunkLimit] = n; // Save data chunk for later writing to file
 
-            cnt++; // increment sample count
+            cnt++;
             k--;
          }
-         
+
          // write chunk to data file
-         // if (((cnt-1)&chunkLimit)==0)
-         //    fwrite(datChunk,sizeof(int),chunkLimit, fp);
+         if ((nexp&chunkLimit)==0)
+            fwrite(datChunk,sizeof(int),chunkLimit, fp);
+
+         printf("i = %d\n",i);
+         printf("n = %d\n",n);
+         printf("nexp = %d\n",nexp);
+         printf("cnt = %d\n\n",cnt);
+
+         nexp+=block_size; // increment expected n by block size
 
          numBlocksRead++;
       }
-   }while( cnt<numSamples );
+   }while(( (nexp-n0)<numSamples )&( n==(nexp-1) ));
 
    /* Timing */
    time(&end_seconds); // Note: only precise to the second
    double seconds = difftime(end_seconds,start_seconds); // duration of test
 
    /* Close data file */
-   // fclose(fp);
+   fclose(fp);
+
+
+   printf("Actual number of samples: %d\n",n-n0);
 
    /* Disable PRU and close memory mappings */
    prussdrv_pru_disable(PRU_NUM);
@@ -134,18 +167,18 @@ int main (int argc, char *argv[])
    while(fread(&num, sizeof(int), 1, fpr)){
       printf("here: %d\n",num);
    }
+
    fclose(fpr);
 
 
 
    /* Print results */
-   // if (n==(nexp-1)){
-   //    printf("\n[PASS]\n");
-   //    return 1;
-   // }else{
-   //    printf("\n[FAIL]\n");
-   //    return 0;
-   // }
-   return 0;
+   if (n==(nexp-1)){
+      printf("\n[PASS]\n");
+      return 1;
+   }else{
+      printf("\n[FAIL]\n");
+      return 0;
+   }
 }
 //read memory

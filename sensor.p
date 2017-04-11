@@ -12,9 +12,9 @@ CLR     r0, r0, 4        // clear bit 4 (STANDBY_INIT)
 SBCO    r0, C4, 4, 4     // store the modified r0 back at the load addr
 
 // LOAD DELAY TIME FROM LINUX
-MOV r5, 0; 		// Number of delays (value read from Linux)
-MOV r2, 0x0; 	// Start of PRU0 RAM (where parameters from linux is read)
-LBBO    r5, r2, 0, 4     // value at address r2 into r5 w/ offset 0 and length 4
+// MOV r5, 0; 		// Number of delays (value read from Linux)
+// MOV r2, 0x0; 	// Start of PRU0 RAM (where parameters from linux is read)
+// LBBO    r5, r2, 0, 4     // value at address r2 into r5 w/ offset 0 and length 4
 
 // LOAD BLOCK SIZE FROM LINUX
 MOV r7, 0; 		// Block size (value read from Linux)
@@ -36,44 +36,42 @@ MOV r4, 0x3FFF
 MAINLOOP: //while(1)
 	MOV r3, r7 	// Size of the Block (k)
 
-FORLOOP: // while(k > 0)
+	FORLOOP: // while(k > 0)
 
-	// WAITFORNEWDATA:
-	// MOV r10, r9; 	// set old count reading (for checking changed value)
+		WAITFORNEWDATA:
+			MOV r10, r9; 	// set old count reading (for checking changed value)
 
-	MOV		r8, GPIO0 | GPIO_DATAIN      // load read addr for DATAIN
-	LBBO	r9, r8, 0, 4     		// Load the value at r8 into r9
+			MOV		r8, GPIO0 | GPIO_DATAIN      // load read addr for DATAIN
+			LBBO	r9, r8, 0, 4     		// Load the value at r8 into r9
 
-	AND     r9, r9, GPIO_MASK 	// r9 = r9 & 
-	// LSR		r9, r9, 2			// r9 = r9 >> 2
+			AND     r9, r9, GPIO_MASK 	// r9 = r9 & 
+			LSR		r9, r9, 2			// r9 = r9 >> 2
 
-	// check if changed
-	// QBEQ	WAITFORNEWDATA,	r9, r10 	// if count = old_count, keep checking
+			// check if changed
+			QBEQ	WAITFORNEWDATA,	r9, r10 	// if count = old_count, keep checking
 
+		SBBO r9,r2,0,4 		// store r9 (data) at address r2 (A)
+		ADD r2,r2,4 		// A = A + 4
+		AND r2,r2,r4 		// reset A based on RAM limit
+		SUB r3,r3,1			// loop counter
+		QBNE FORLOOP, r3, 0	// for loop end
 
-	SBBO r9,r2,0,4 		// store r9 (data) at address r2 (A)
-	ADD r2,r2,4 		// A = A + 4
-	AND r2,r2,r4 		// reset A based on RAM limit
-	SUB r3,r3,1			// loop counter
-	QBNE FORLOOP, r3, 0	// for loop end
-
-	// Send block count interrupt
-	ADD r11,r11,1			// Increment block count
-	SBBO r11,r12,0,4 		// store r11 (block count) at address r12 (0x0)
+		// Send block count interrupt
+		ADD r11,r11,1			// Increment block count
+		SBBO r11,r12,0,4 		// store r11 (block count) at address r12 (0x0)
 	
-	JMP MAINLOOP 		// while(1)
+//     // Here is the delay
+// 	MOV r0, r5
 
-    // Here is the delay
-	MOV r0, r5
+// DELAY:
+// 	MOV r6, 100
+// 	// each DELAYDELAY is a 1 microsecond (with r6=100)
+// 	DELAYDELAY:
+// 		SUB r6,r6, 1
+// 		QBNE DELAYDELAY, r6,0 	// delay
+// 	SUB r0,r0, 1
+// 	QBNE DELAY, r0,0 	// delay
 
-DELAY:
-	MOV r6, 100
-	// each DELAYDELAY is a 1 microsecond (with r6=100)
-	DELAYDELAY:
-		SUB r6,r6, 1
-		QBNE DELAYDELAY, r6,0 	// delay
-	SUB r0,r0, 1
-	QBNE DELAY, r0,0 	// delay
 	JMP MAINLOOP 		// while(1)
 
 
