@@ -128,22 +128,20 @@ int main (int argc, char *argv[])
    /* Verify */
    int pass = 1; // pass/fail
 
-   int num = 0;
-   int oldNum = -1;
-   FILE *fpr;
-   fpr = fopen("data.txt","r");
-
-   while(fread(&num, sizeof(int), 1, fpr)){
-      if ((num-oldNum)!=1){
-         printf("(SKIP) between %d and %d\n",oldNum,num);
-         pass = 0;
-      }
-      oldNum=num;
-   }
-   fclose(fpr);
+   // int num = 0;int oldNum = -1;
+   // FILE *fpr;
+   // fpr = fopen("data.txt","r");
+   // while(fread(&num, sizeof(int), 1, fpr)){
+   //    if ((num-oldNum)!=1){
+   //       printf("(SKIP) between %d and %d\n",oldNum,num);
+   //       pass = 0;
+   //    }
+   //    oldNum=num;
+   // }
+   // fclose(fpr);
 
    if (n!=(nexp-1)){
-      printf("Linux overloaded\n");
+      printf("(OVERLOAD) at %d\n",nexp);
       pass = 0;
    }
    /* Print results */
