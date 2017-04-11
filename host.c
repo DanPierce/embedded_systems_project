@@ -22,27 +22,28 @@ void usage(void)
 
 int main (int argc, char *argv[])
 {
+   /* Set a high priority to the current process */
    setpriority(PRIO_PROCESS, 0, -20);
 
-   int data_rate_kHz,block_size,operation_time_minutes;
+   int data_rate_kHz,block_size,operation_time_minutes; // parameters
 
    /* Load Arguments   */
    if ( (argc < 4) )
         usage();
 
-   data_rate_kHz = atoi(argv[1]);
-   block_size = atoi(argv[2]);
-   operation_time_minutes = atoi(argv[3]);
+   data_rate_kHz = atoi(argv[1]);            // rate at which data is transferred
+   block_size = atoi(argv[2]);               // block size of data passing
+   operation_time_minutes = atoi(argv[3]);   // test duration in minutes
    
+   /* Print parameters to screen */
    printf("\nOperation Parameters:\n\tData Rate: %d (kHz)\n\tBlock Size: %d\n\tTest Duration: %d (min)\n",
                            data_rate_kHz,block_size,operation_time_minutes);
 
-   int number_100ms_delays = (int) (100.0 * ((double)block_size)/((double)data_rate_kHz));
+   int number_us_delays = (int) (1000.0 * ((double)block_size)/((double)data_rate_kHz)); // number of 1 microsecond delays of the PRU to acheive desired rate
 
-   printf("\t---------------------------------------\n\tNumber of PRU 100ms Delays = %d (us) \n",number_100ms_delays);
+   printf("\t---------------------------------------\n\tNumber of PRU microsecond Delays = %d (us) \n",number_us_delays);
 
-   // int maxCountVal = 720e6;
-   int maxCountVal = data_rate_kHz*1000*operation_time_minutes*60;
+   int maxCountVal = data_rate_kHz*1000*operation_time_minutes*60; // maximum sample count value
 
    printf("\tMax Count Value: %d\n\n",maxCountVal);
 
@@ -58,7 +59,7 @@ int main (int argc, char *argv[])
    }
 
    /* Write parameters to PRU   */
-   prussdrv_pru_write_memory(PRUSS0_PRU0_DATARAM, 0, &number_100ms_delays, 4);
+   prussdrv_pru_write_memory(PRUSS0_PRU0_DATARAM, 0, &number_us_delays, 4);
    prussdrv_pru_write_memory(PRUSS0_PRU1_DATARAM, 0, &block_size, 4);
 
    /* Map PRU's INTC */
@@ -71,29 +72,28 @@ int main (int argc, char *argv[])
    int * ptr_0; // points to global memory that maps PRU memory address 0x0 (first address of PRU0)
    prussdrv_map_prumem(PRUSS0_PRU0_DATARAM, (void **) &ptr_0);
 
-   int * ptr_1; // points to global memory that maps first address of PRU1
+   int * ptr_1; // points to global memory that maps shared memory
    ptr_1 = ptr_0 + (0x10000>>2);
 
-   const int ramLimit = (0x3FFF>>2);
-   // const int chunkLimit = ramLimit;
-   const int chunkLimit = block_size-1;
+   const int ramLimit = (0x3FFF>>2);   // limit of PRU0 and PRU1 RAM (16KB)
+   const int chunkLimit = ramLimit;    // limit of the chunks used to store data between writing to file
 
    /* Initialize Loop Variables */
-   int numBlocksRead=0;  // For interrupt
-   int k;        // Block count
-   int nexp=0;   // expected value of n
-   int n=0;      // actual value of n
-   int i=0;		  // Loop index of RAM
+   int numBlocksRead=0;    // for interrupt
+   int k;                  // block count
+   int nexp=0;             // expected value of n
+   int n=0;                // actual value of n
+   int i=0;		            // loop index of RAM
 
-   int datChunk[chunkLimit];
+   int datChunk[chunkLimit];  // initialize array for temporary storage of data
 
-   // Write data to file
+   /* Open data file */
    FILE *fp;
    fp = fopen("data.txt","w");
 
    /* Timing */
-   time_t start_seconds,end_seconds;
-   time(&start_seconds);
+   time_t start_seconds,end_seconds; // time at start of test, time at end of test
+   time(&start_seconds);   // Note: only precise to the second
 
    /* Start Test */
    do{
@@ -109,7 +109,8 @@ int main (int argc, char *argv[])
             k--;
          }
          
-         if ((nexp&chunkLimit)==0)
+         // write chunk to data file
+         if (((nexp-1)&chunkLimit)==0)
             fwrite(datChunk,sizeof(int),chunkLimit, fp);
 
          numBlocksRead++;
@@ -117,13 +118,14 @@ int main (int argc, char *argv[])
    }while((nexp<maxCountVal)&(n==(nexp-1)));
 
    /* Timing */
-   time(&end_seconds);
-   double seconds = difftime(end_seconds,start_seconds);
+   time(&end_seconds); // Note: only precise to the second
+   double seconds = difftime(end_seconds,start_seconds); // duration of test
 
+   /* Close data file */
    fclose(fp);
 
 
-   // Print results
+   /* Print results */
    if (n==(nexp-1)){
       printf("\n[PASS]\n");
    }else{
@@ -136,13 +138,11 @@ int main (int argc, char *argv[])
    printf("Data written: %d blocks (%d measurements)\n",numBlocksRead,nexp);
    printf("n = %d\n",n);
 
-   // ------ Save all results in one file 
-   FILE *f_r;
-   f_r = fopen("results/results_full_4095.txt","a");
-
-   fprintf(f_r,"%d,%d,%d,%d,%d,%d,%d\n",data_rate_kHz,block_size,operation_time_minutes,numBlocksRead,nexp,maxCountVal,n);
-
-   fclose(f_r);
+   /* Save results to appended file (for averaging) */
+   FILE *fp2;
+   fp2 = fopen("results/results_full.txt","a");
+   fprintf(fp2,"%d,%d,%d,%d,%d,%d,%d\n",data_rate_kHz,block_size,operation_time_minutes,numBlocksRead,nexp,maxCountVal,n);
+   fclose(fp2);
 
    /* Disable PRU and close memory mappings */
    prussdrv_pru_disable(PRU_NUM);
