@@ -69,6 +69,7 @@ int main (int argc, char *argv[])
    const int ramLimit = (0x3FFF>>2);   // limit of PRU0 and PRU1 RAM (16KB)
    // const int chunkLimit = ramLimit;    // limit of the chunks used to store data between writing to file
    const int chunkLimit = blockSize-1;    // limit of the chunks used to store data between writing to file
+   const int chunkSize = chunkLimit+1;    // limit of the chunks used to store data between writing to file
 
    /* Initialize Loop Variables */
    int k;                  // block count
@@ -78,7 +79,7 @@ int main (int argc, char *argv[])
    
    int cnt = 0;               // total number of samples read
 
-   int datChunk[chunkLimit];  // initialize array for temporary storage of data
+   int datChunk[chunkSize];  // initialize array for temporary storage of data
 
    /* Open data file */
    FILE *fp;
@@ -112,11 +113,8 @@ int main (int argc, char *argv[])
          }
 
          // write chunk to data file
-         if (( cnt&chunkLimit)==0){
-            fwrite(datChunk,sizeof(int),chunkLimit, fp);
-            // printf("WRITE");
-         }
-         // printf("-----------\n");
+         if ( (cnt&chunkLimit)==0 )
+            fwrite(datChunk,sizeof(int),chunkSize, fp);
 
          numBlocksRead++;
       }
@@ -129,17 +127,12 @@ int main (int argc, char *argv[])
    /* Close data file */
    fclose(fp);
 
-
-   // int num;
-   // FILE *fpr;
-   // fpr = fopen("data.txt","r");
-
-   // while(fread(&num, sizeof(int), 1, fpr))
-   //    printf("%d\n",num);
-
-   // fclose(fpr);
-
-
+   int num;
+   FILE *fpr;
+   fpr = fopen("data.txt","r");
+   while(fread(&num, sizeof(int), 1, fpr))
+      printf("%d\n",num);
+   fclose(fpr);
 
    /* Disable PRU and close memory mappings */
    prussdrv_pru_disable(PRU_NUM);
