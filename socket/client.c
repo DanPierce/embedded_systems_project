@@ -34,8 +34,8 @@ int main(int argc, char *argv[])
     int rv;
     char s[INET6_ADDRSTRLEN];
     
-    if (argc != 2) {
-        fprintf(stderr,"usage: client hostname\n");
+    if (argc != 3) {
+        fprintf(stderr,"usage: client <hostname> <Test Duration (min)>\n");
         exit(1);
     }
 
@@ -74,8 +74,16 @@ int main(int argc, char *argv[])
     printf("client: connecting to %s\n", s);
     
     freeaddrinfo(servinfo); // all done with this structure
+
     
 /*=================================================================================*/
+    int operationTimeMinutes = atoi(argv[2]);
+
+    if (send(sockfd, &operationTimeMinutes, 4, 0) == -1){
+        perror("send");
+        exit(1); 
+    }
+
     /* Open data file */
     FILE *fp;
     fp = fopen("data_received.txt","w");
@@ -94,7 +102,8 @@ int main(int argc, char *argv[])
 
         if(numbytes){
             // printf("client received %d bytes. Value = %d\n",numbytes,dat);
-            fprintf(fp, "%d\n",dat);
+            // fprintf(fp, "%d\n",dat);
+            fwrite(&dat,sizeof(int),1, fp);
         }
     }
 

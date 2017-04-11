@@ -121,20 +121,15 @@ int main (int argc, char *argv[])
       time(&end_seconds); // Note: only precise to the second
    }while( difftime(end_seconds,start_seconds) < operationTimeSeconds );
 
-   /* Timing */
-   double seconds = difftime(end_seconds,start_seconds); // duration of test
-
-   printf("Actual duration: %f\n",seconds);
-
    /* Close data file */
    fclose(fp);
 
-   int num;
-   FILE *fpr;
-   fpr = fopen("data.txt","r");
-   while(fread(&num, sizeof(int), 1, fpr))
-      printf("%d\n",num);
-   fclose(fpr);
+   // int num;
+   // FILE *fpr;
+   // fpr = fopen("data.txt","r");
+   // while(fread(&num, sizeof(int), 1, fpr))
+   //    printf("%d\n",num);
+   // fclose(fpr);
 
    /* Disable PRU and close memory mappings */
    prussdrv_pru_disable(PRU_NUM);

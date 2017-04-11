@@ -118,12 +118,21 @@ int main(void)
         printf("server: got connection from %s\n", s);
 
 /*=================================================================================*/
+        int operationTimeMinutes;
+        char sysCmd[40];
+
+        if (recv(new_fd, &operationTimeMinutes, 4, 0) == -1){
+            perror("recv");
+            exit(1); 
+        }
+
         int eos_signal = 99;
         /* START host.c to read sensor */
-        printf("Started data collection, please wait...\n");
+        printf("Started data collection of %d minutes, please wait...\n",operationTimeMinutes);
 
-		// int result = system("/home/danpierce/project/host 128 1 512");
-        int result = system("/home/danpierce/project/host 4 1 256");
+        sprintf(sysCmd, "/home/danpierce/project/host 256 %d", operationTimeMinutes);           // Create the gpio115 name for /sys/ebb/gpio115
+
+        int result = system(sysCmd);
 
 		printf("I got a return of %d\n", result);
 
