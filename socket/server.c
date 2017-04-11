@@ -118,36 +118,32 @@ int main(void)
         printf("server: got connection from %s\n", s);
 
 /*=================================================================================*/
-        int operationTimeMinutes;
-        char sysCmd[40];
+        int operationTimeMinutes;   // length of time to run host.c
+        char sysCmd[40];            // string containing system command for host.c
+        int eos_signal = 99;        // send this to signal EOF
+        short int dat;                    // data read from file
 
+        /* receive test duration from client */
         if (recv(new_fd, &operationTimeMinutes, 4, 0) == -1){
             perror("recv");
             exit(1); 
         }
 
-        int eos_signal = 99;
         /* START host.c to read sensor */
         printf("Started data collection of %d minutes, please wait...\n",operationTimeMinutes);
-
-        sprintf(sysCmd, "/home/danpierce/project/host 256 %d", operationTimeMinutes);           // Create the gpio115 name for /sys/ebb/gpio115
-
-        int result = system(sysCmd);
-
-		printf("I got a return of %d\n", result);
-
+        sprintf(sysCmd, "/home/danpierce/project/host 256 %d", operationTimeMinutes);
+        system(sysCmd);
 
         if (!fork()) { // this is the child process
             close(sockfd); // child doesn't need the listener
 
 			FILE *fpr = fopen("/home/danpierce/project/data.txt", "r"); 
 
-			int currentData;
 
-			while (fread(&currentData, sizeof(int),1,fpr)){
-				printf("%d\n",currentData);
+			while (fread(&dat, sizeof(short int),1,fpr)){
+				printf("%d\n",dat);
 
-				if (send(new_fd, &currentData, 4, 0) == -1)
+				if (send(new_fd, &dat, sizeof(short int), 0) == -1)
                 	perror("send");
 				
 			}

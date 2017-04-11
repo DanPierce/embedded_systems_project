@@ -89,21 +89,20 @@ int main(int argc, char *argv[])
     fp = fopen("data_received.txt","w");
 
     int eos_signal = 99;
-    int dat=0;
+    short int dat=0;
 
     while(dat!=eos_signal){
 
-        numbytes=recv(sockfd, &dat, 4, 0);
+        numbytes=recv(sockfd, &dat, sizeof(short int), 0);
 
         if ((numbytes) == -1) {
             perror("recv");
             exit(1); 
         }
 
-        if(numbytes){
-            // printf("client received %d bytes. Value = %d\n",numbytes,dat);
-            // fprintf(fp, "%d\n",dat);
-            fwrite(&dat,sizeof(int),1, fp);
+        if( (numbytes) && (dat<99) ){
+            printf("client received %d bytes. Value = %d\n",numbytes,dat);
+            fwrite(&dat,sizeof(short int),1, fp);
         }
     }
 

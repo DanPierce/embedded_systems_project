@@ -79,7 +79,7 @@ int main (int argc, char *argv[])
    
    int cnt = 0;               // total number of samples read
 
-   int datChunk[chunkSize];  // initialize array for temporary storage of data
+   short int datChunk[chunkSize];  // initialize array for temporary storage of data
 
    /* Open data file */
    FILE *fp;
@@ -102,7 +102,7 @@ int main (int argc, char *argv[])
 
             n=(*(ptr_0+i)); // read memory
             
-            datChunk[cnt&chunkLimit] = n; // Save data chunk for later writing to file
+            datChunk[cnt&chunkLimit] = (short int) n; // Save data chunk for later writing to file
 
             // printf("i = %d\n",i);
             // printf("n = %d\n",n);
@@ -114,7 +114,7 @@ int main (int argc, char *argv[])
 
          // write chunk to data file
          if ( (cnt&chunkLimit)==0 )
-            fwrite(datChunk,sizeof(int),chunkSize, fp);
+            fwrite(datChunk,sizeof(short int),chunkSize, fp);
 
          numBlocksRead++;
       }
@@ -124,10 +124,10 @@ int main (int argc, char *argv[])
    /* Close data file */
    fclose(fp);
 
-   // int num;
+   // short int num;
    // FILE *fpr;
    // fpr = fopen("data.txt","r");
-   // while(fread(&num, sizeof(int), 1, fpr))
+   // while(fread(&num, sizeof(short int), 1, fpr))
    //    printf("%d\n",num);
    // fclose(fpr);
 
