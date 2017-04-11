@@ -15,8 +15,8 @@
 
 void usage(void)
 {
-   printf("\n USAGE: host <Block Size> <Test Duration (min)> <Number of Samples>\n");
-   printf("\n\tExample: host 256 12 512\n");
+   printf("\n USAGE: host <Block Size> <Test Duration (min)> \n");
+   printf("\n\tExample: host 256 12\n");
    exit(1);
 }
 
@@ -25,7 +25,7 @@ int main (int argc, char *argv[])
    /* Set a high priority to the current process */
    setpriority(PRIO_PROCESS, 0, -20);
 
-   int blockSize,operationTimeMinutes,numSamples; // parameters
+   int blockSize,operationTimeMinutes; // parameters
 
    /* Load Arguments   */
    if ( (argc < 4) )
@@ -33,9 +33,8 @@ int main (int argc, char *argv[])
 
    blockSize = atoi(argv[1]);               // block size of data passing
    operationTimeMinutes = atoi(argv[2]);   // test duration in minutes
-   numSamples = atoi(argv[3]);   // number of samples to record
 
-   printf("\nOperation Parameters:\n\tBlock Size: %d\n\tTest Duration: %d (min)\n\tNumber of samples: %d \n",blockSize,operationTimeMinutes,numSamples);
+   printf("\nOperation Parameters:\n\tBlock Size: %d\n\tTest Duration: %d (min)\n",blockSize,operationTimeMinutes);
 
    /* Initialize structure used by prussdrv_pruintc_intc   */
    /* PRUSS_INTC_INITDATA is found in pruss_intc_mapping.h */
@@ -94,7 +93,7 @@ int main (int argc, char *argv[])
 
    /* Start Test */
    do{
-      while( numBlocksRead<(*ptr_1) & cnt<numSamples ){ // INTERRUPT
+      while( numBlocksRead<(*ptr_1) ){ // INTERRUPT
          
          k=blockSize;
          while(k>0){
@@ -118,13 +117,13 @@ int main (int argc, char *argv[])
 
          numBlocksRead++;
       }
-   }while( cnt < numSamples );
+      time(&end_seconds); // Note: only precise to the second
+   }while( difftime(end_seconds,start_seconds) < operationTimeMinutes );
 
    /* Timing */
-   time(&end_seconds); // Note: only precise to the second
    double seconds = difftime(end_seconds,start_seconds); // duration of test
 
-   /* Close data file */
+   /* Close data file */ 
    fclose(fp);
 
    int num;
