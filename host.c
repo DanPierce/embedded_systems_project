@@ -15,8 +15,8 @@
 
 void usage(void)
 {
-   printf("\nUSAGE: host <Block Size> <Test Duration (min)>\n");
-   printf("\n\tExample: host 256 12\n");
+   printf("\nUSAGE: host <Data Rate (kHz)> <Block Size> <Test Duration (min)>\n");
+   printf("\n\tExample: host 10 256 12\n");
    exit(1);
 }
 
@@ -25,17 +25,21 @@ int main (int argc, char *argv[])
    /* Set a high priority to the current process */
    setpriority(PRIO_PROCESS, 0, -20);
 
-   int block_size,operation_time_minutes; // parameters
+   int data_rate_kHz,block_size,operation_time_minutes; // parameters
 
    /* Load Arguments   */
-   if ( (argc < 3) )
-        usage();
+   if ( (argc < 4) )
+      usage();
 
+   data_rate_kHz = atoi(argv[1]);            // rate at which data is transferred
    block_size = atoi(argv[2]);               // block size of data passing
    operation_time_minutes = atoi(argv[3]);   // test duration in minutes
-   
+
    /* Print parameters to screen */
-   printf("\nOperation Parameters:\n\tBlock Size: %d\n\tTest Duration: %d (min)\n",block_size,operation_time_minutes);
+   printf("\nOperation Parameters:\n\tData Rate: %d (kHz)\n\tBlock Size: %d\n\tTest Duration: %d (min)\n",
+                           data_rate_kHz,block_size,operation_time_minutes);
+
+   int number_us_delays = (int) (1000.0 * ((double)block_size)/((double)data_rate_kHz)); // number of 1 microsecond delays of the PRU to acheive desired rate
 
    int numSamples = data_rate_kHz*1000*operation_time_minutes*60; // maximum sample count value
 
@@ -76,15 +80,13 @@ int main (int argc, char *argv[])
    int k;                  // block count
    int numBlocksRead = 0;    // for interrupt
    int i = 0;                // loop index of RAM
-   int n0 = (*(ptr_0+i));     // actual value of n (read memory for initial value)
-   int n = n0;
-   int nexp = n;             // expected value of n
-
+   int n = 0;                 // data read in
+   int cnt = 0;
    int datChunk[chunkLimit];  // initialize array for temporary storage of data
 
    /* Open data file */
-   FILE *fp;
-   fp = fopen("data.txt","w");
+   // FILE *fp;
+   // fp = fopen("data.txt","w");
 
    /* Timing */
    time_t start_seconds,end_seconds; // time at start of test, time at end of test
@@ -93,43 +95,57 @@ int main (int argc, char *argv[])
    /* Start Test */
    do{
       while(numBlocksRead<(*ptr_1)){ // INTERRUPT
+         
          k=block_size;
          while(k>0){
-            i=nexp&ramLimit; // impose RAM limit
+            i=cnt&ramLimit; // impose RAM limit
             n=(*(ptr_0+i)); // read memory
+            
+            printf("\nn = %d\n",n);
+            
+            datChunk[cnt&chunkLimit] = n; // Save data chunk for later writing to file
 
-            datChunk[nexp&chunkLimit] = n; // Save data chunk for later writing to file
-
-            nexp++; // increment expected n by block size
+            cnt++; // increment sample count
             k--;
          }
          
          // write chunk to data file
-         if (((nexp-1)&chunkLimit)==0)
-            fwrite(datChunk,sizeof(int),chunkLimit, fp);
+         // if (((cnt-1)&chunkLimit)==0)
+         //    fwrite(datChunk,sizeof(int),chunkLimit, fp);
 
          numBlocksRead++;
       }
-   }while(( (nexp-n0)<numSamples )&( n==(nexp-1) ));
+   }while( cnt<numSamples );
 
    /* Timing */
    time(&end_seconds); // Note: only precise to the second
    double seconds = difftime(end_seconds,start_seconds); // duration of test
 
    /* Close data file */
-   fclose(fp);
+   // fclose(fp);
 
    /* Disable PRU and close memory mappings */
    prussdrv_pru_disable(PRU_NUM);
    prussdrv_exit ();
 
-   /* Print results */
-   if (n==(nexp-1)){
-      printf("\n[PASS]\n");
-      return 1;
-   }else{
-      printf("\n[FAIL]\n");
-      return 0;
+   FILE *fpr;
+   fpr = fopen("data.txt","r");
+   int num;
+   while(fread(&num, sizeof(int), 1, fpr)){
+      printf("here: %d\n",num);
    }
+   fclose(fpr);
+
+
+
+   /* Print results */
+   // if (n==(nexp-1)){
+   //    printf("\n[PASS]\n");
+   //    return 1;
+   // }else{
+   //    printf("\n[FAIL]\n");
+   //    return 0;
+   // }
+   return 0;
 }
 //read memory
