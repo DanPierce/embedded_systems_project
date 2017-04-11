@@ -77,6 +77,7 @@ int main (int argc, char *argv[])
 
    const int ramLimit = (0x3FFF>>2);   // limit of PRU0 and PRU1 RAM (16KB)
    const int chunkLimit = ramLimit;    // limit of the chunks used to store data between writing to file
+   const int chunkSize = chunkLimit+1;    // limit of the chunks used to store data between writing to file
 
    /* Initialize Loop Variables */
    int numBlocksRead=0;    // for interrupt
@@ -85,7 +86,7 @@ int main (int argc, char *argv[])
    int n=0;                // actual value of n
    int i=0;		            // loop index of RAM
 
-   int datChunk[chunkLimit];  // initialize array for temporary storage of data
+   int datChunk[chunkSize];  // initialize array for temporary storage of data
 
    /* Open data file */
    FILE *fp;
@@ -108,10 +109,10 @@ int main (int argc, char *argv[])
             nexp++; // increment expected n by block size
             k--;
          }
-         
+
          // write chunk to data file
-         if (((nexp-1)&chunkLimit)==0)
-            fwrite(datChunk,sizeof(int),chunkLimit, fp);
+         if ( ( nexp&chunkLimit ) == 0 )
+            fwrite(datChunk,sizeof(int),chunkSize, fp);
 
          numBlocksRead++;
       }
@@ -124,9 +125,29 @@ int main (int argc, char *argv[])
    /* Close data file */
    fclose(fp);
 
+   /* Verify */
+   int pass = 1; // pass/fail
 
+   int num = 0;
+   int oldNum = -1;
+   FILE *fpr;
+   fpr = fopen("data.txt","r");
+
+   while(fread(&num, sizeof(int), 1, fpr)){
+      if ((num-oldNum)!=1){
+         printf("Missed: %d\n",num);
+         pass = 0;
+      }
+      oldNum=num;
+   }
+   fclose(fpr);
+
+   if (n!=(nexp-1)){
+      printf("Linux overloaded\n");
+      pass = 0;
+   }
    /* Print results */
-   if (n==(nexp-1)){
+   if (pass){
       printf("\n[PASS]\n");
    }else{
       printf("\n[FAIL]\n");
