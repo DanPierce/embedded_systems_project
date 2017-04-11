@@ -28,7 +28,7 @@ int main (int argc, char *argv[])
    int blockSize,operationTimeMinutes; // parameters
 
    /* Load Arguments   */
-   if ( (argc < 4) )
+   if ( (argc < 3) )
       usage();
 
    blockSize = atoi(argv[1]);               // block size of data passing
@@ -36,6 +36,7 @@ int main (int argc, char *argv[])
 
    printf("\nOperation Parameters:\n\tBlock Size: %d\n\tTest Duration: %d (min)\n",blockSize,operationTimeMinutes);
 
+   int operationTimeSeconds = operationTimeMinutes*60;
    /* Initialize structure used by prussdrv_pruintc_intc   */
    /* PRUSS_INTC_INITDATA is found in pruss_intc_mapping.h */
    tpruss_intc_initdata pruss_intc_initdata = PRUSS_INTC_INITDATA;
@@ -118,12 +119,14 @@ int main (int argc, char *argv[])
          numBlocksRead++;
       }
       time(&end_seconds); // Note: only precise to the second
-   }while( difftime(end_seconds,start_seconds) < operationTimeMinutes );
+   }while( difftime(end_seconds,start_seconds) < operationTimeSeconds );
 
    /* Timing */
    double seconds = difftime(end_seconds,start_seconds); // duration of test
 
-   /* Close data file */ 
+   printf("Actual duration: %f\n",seconds);
+
+   /* Close data file */
    fclose(fp);
 
    int num;
