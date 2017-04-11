@@ -118,10 +118,12 @@ int main(void)
         printf("server: got connection from %s\n", s);
 
 /*=================================================================================*/
+        int eos_signal = 99;
         /* START host.c to read sensor */
         printf("Started data collection, please wait...\n");
 
-		int result = system("/home/danpierce/project/host 4 1");
+		// int result = system("/home/danpierce/project/host 128 1 512");
+        int result = system("/home/danpierce/project/host 4 1 256");
 
 		printf("I got a return of %d\n", result);
 
@@ -129,7 +131,7 @@ int main(void)
         if (!fork()) { // this is the child process
             close(sockfd); // child doesn't need the listener
 
-			FILE *fpr = fopen("data_file.txt", "r"); 
+			FILE *fpr = fopen("/home/danpierce/project/data.txt", "r"); 
 
 			int currentData;
 
@@ -144,7 +146,7 @@ int main(void)
 			fclose(fpr);
 
             // Signal end of file
-            if (send(new_fd, "k", 1, 0) == -1)
+            if (send(new_fd, &eos_signal, 4, 0) == -1)
                 perror("send");
 /*=================================================================================*/
 

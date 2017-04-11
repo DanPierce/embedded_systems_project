@@ -76,10 +76,15 @@ int main(int argc, char *argv[])
     freeaddrinfo(servinfo); // all done with this structure
     
 /*=================================================================================*/
-    int eos = 1;
-    int dat;
+    /* Open data file */
+    FILE *fp;
+    fp = fopen("data_received.txt","w");
 
-    while(eos){
+    int eos_signal = 99;
+    int dat=0;
+
+    while(dat!=eos_signal){
+
         numbytes=recv(sockfd, &dat, 4, 0);
 
         if ((numbytes) == -1) {
@@ -87,12 +92,13 @@ int main(int argc, char *argv[])
             exit(1); 
         }
 
-        // buf[numbytes] = '\0';
         if(numbytes){
-            printf("client: received %d bytes = '%d'\n",numbytes,dat);
+            // printf("client received %d bytes. Value = %d\n",numbytes,dat);
+            fprintf(fp, "%d\n",dat);
         }
-        // eos = strcmp(dat,"k");
     }
+
+    fclose(fp);
 /*=================================================================================*/
 
     printf("END OF STREAM \n");
