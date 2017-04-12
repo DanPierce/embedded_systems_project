@@ -76,7 +76,7 @@ int main (int argc, char *argv[])
    ptr_1 = ptr_0 + (0x10000>>2);
 
    const int ramLimit = (0x3FFF>>2);   // limit of PRU0 and PRU1 RAM (16KB)
-   const int chunkLimit = ramLimit;    // limit of the chunks used to store data between writing to file
+   const int chunkLimit = 0x3FFF;    // limit of the chunks used to store data between writing to file
    const int chunkSize = chunkLimit+1;    // size of the chunk array
 
    /* Initialize Loop Variables */
@@ -113,10 +113,10 @@ int main (int argc, char *argv[])
          // write chunk to data file
          if ( ( nexp&chunkLimit ) == 0 )
             fwrite(datChunk,sizeof(int),chunkSize, fp);
-
+            
          numBlocksRead++;
       }
-   }while((nexp<maxCountVal)&(n==(nexp-1)));
+   }while( (nexp<maxCountVal) && (n==(nexp-1)) );
 
    /* Timing */
    time(&end_seconds); // Note: only precise to the second
@@ -125,30 +125,11 @@ int main (int argc, char *argv[])
    /* Close data file */
    fclose(fp);
 
-   /* Verify */
-   int pass = 1; // pass/fail
-
-   // int num = 0;int oldNum = -1;
-   // FILE *fpr;
-   // fpr = fopen("data.txt","r");
-   // while(fread(&num, sizeof(int), 1, fpr)){
-   //    if ((num-oldNum)!=1){
-   //       printf("(SKIP) between %d and %d\n",oldNum,num);
-   //       pass = 0;
-   //    }
-   //    oldNum=num;
-   // }
-   // fclose(fpr);
-
-   if (n!=(nexp-1)){
-      printf("(OVERLOAD) at %d\n",nexp);
-      pass = 0;
-   }
    /* Print results */
-   if (pass){
+   if (n==(nexp-1)){
       printf("\n[PASS]\n");
    }else{
-      printf("\n[FAIL]\n");
+      printf("\n[FAIL] OVERLOAD at %d\n",nexp);
    }
 
    printf("\nTest lasted for %f seconds\n",seconds);
@@ -159,7 +140,7 @@ int main (int argc, char *argv[])
 
    /* Save results to appended file (for averaging) */
    FILE *fp2;
-   fp2 = fopen("results/results_full.txt","a");
+   fp2 = fopen("results_full.txt","a");
    fprintf(fp2,"%d,%d,%d,%d,%d,%d,%d\n",data_rate_kHz,block_size,operation_time_minutes,numBlocksRead,nexp,maxCountVal,n);
    fclose(fp2);
 
