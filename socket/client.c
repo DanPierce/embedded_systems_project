@@ -13,7 +13,7 @@
 
 #include <arpa/inet.h>
 
-#define PORT "3490" // the port client will be connecting to
+#define PORT "10010" // the port client will be connecting to
 
 #define MAXDATASIZE 100 // max number of bytes we can get at once
 
@@ -78,7 +78,10 @@ int main(int argc, char *argv[])
     
 /*=================================================================================*/
     int operationTimeMinutes = atoi(argv[2]);
+    int eos_signal = 99;
+    short int dat=0;
 
+    /* Send operation time parameter to server */
     if (send(sockfd, &operationTimeMinutes, 4, 0) == -1){
         perror("send");
         exit(1); 
@@ -87,9 +90,6 @@ int main(int argc, char *argv[])
     /* Open data file */
     FILE *fp;
     fp = fopen("data_received.txt","w");
-
-    int eos_signal = 99;
-    short int dat=0;
 
     while(dat!=eos_signal){
 
@@ -100,10 +100,10 @@ int main(int argc, char *argv[])
             exit(1); 
         }
 
-        if( (numbytes) && (dat<99) ){
-            printf("client received %d bytes. Value = %d\n",numbytes,dat);
+        // write to file until end of stream is signalled 
+        if( (numbytes) && (dat<eos_signal) )
             fwrite(&dat,sizeof(short int),1, fp);
-        }
+        
     }
 
     fclose(fp);

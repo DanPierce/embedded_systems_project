@@ -37,6 +37,7 @@ int main (int argc, char *argv[])
    printf("\nOperation Parameters:\n\tBlock Size: %d\n\tTest Duration: %d (min)\n",blockSize,operationTimeMinutes);
 
    int operationTimeSeconds = operationTimeMinutes*60;
+
    /* Initialize structure used by prussdrv_pruintc_intc   */
    /* PRUSS_INTC_INITDATA is found in pruss_intc_mapping.h */
    tpruss_intc_initdata pruss_intc_initdata = PRUSS_INTC_INITDATA;
@@ -58,7 +59,6 @@ int main (int argc, char *argv[])
    /* Load and execute binary on PRU */
    prussdrv_exec_program (PRU_NUM, "./sensor.bin");
 
-
    /* Memory mapping */
    int * ptr_0; // points to global memory that maps PRU memory address 0x0 (first address of PRU0)
    prussdrv_map_prumem(PRUSS0_PRU0_DATARAM, (void **) &ptr_0);
@@ -67,8 +67,7 @@ int main (int argc, char *argv[])
    ptr_1 = ptr_0 + (0x10000>>2);
 
    const int ramLimit = (0x3FFF>>2);   // limit of PRU0 and PRU1 RAM (16KB)
-   // const int chunkLimit = ramLimit;    // limit of the chunks used to store data between writing to file
-   const int chunkLimit = blockSize-1;    // limit of the chunks used to store data between writing to file
+   const int chunkLimit = ramLimit;    // limit of the chunks used to store data between writing to file
    const int chunkSize = chunkLimit+1;    // limit of the chunks used to store data between writing to file
 
    /* Initialize Loop Variables */
@@ -76,7 +75,6 @@ int main (int argc, char *argv[])
    int numBlocksRead = 0;    // for interrupt
    int i = 0;                // loop index of RAM
    int n = 0;
-   
    int cnt = 0;               // total number of samples read
 
    short int datChunk[chunkSize];  // initialize array for temporary storage of data
@@ -89,24 +87,17 @@ int main (int argc, char *argv[])
    time_t start_seconds,end_seconds; // time at start of test, time at end of test
    time(&start_seconds);   // Note: only precise to the second
 
-   // printf("numBlocksRead = %d\n",numBlocksRead);
-   // printf("(*ptr_1) = %d\n",(*ptr_1));
-
    /* Start Test */
    do{
       while( numBlocksRead<(*ptr_1) ){ // INTERRUPT
          
-         k=blockSize;
+         k=blockSize; // reset k to blockSize
          while(k>0){
             i=cnt&ramLimit; // impose RAM limit
 
             n=(*(ptr_0+i)); // read memory
             
             datChunk[cnt&chunkLimit] = (short int) n; // Save data chunk for later writing to file
-
-            // printf("i = %d\n",i);
-            // printf("n = %d\n",n);
-            // printf("cnt = %d\n\n",cnt);
 
             cnt++;
             k--;
@@ -123,13 +114,6 @@ int main (int argc, char *argv[])
 
    /* Close data file */
    fclose(fp);
-
-   // short int num;
-   // FILE *fpr;
-   // fpr = fopen("data.txt","r");
-   // while(fread(&num, sizeof(short int), 1, fpr))
-   //    printf("%d\n",num);
-   // fclose(fpr);
 
    /* Disable PRU and close memory mappings */
    prussdrv_pru_disable(PRU_NUM);

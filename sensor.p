@@ -11,15 +11,10 @@ LBCO    r0, C4, 4, 4     // load SYSCFG reg into r0 (use c4 const addr)
 CLR     r0, r0, 4        // clear bit 4 (STANDBY_INIT)
 SBCO    r0, C4, 4, 4     // store the modified r0 back at the load addr
 
-// LOAD DELAY TIME FROM LINUX
-// MOV r5, 0; 		// Number of delays (value read from Linux)
-// MOV r2, 0x0; 	// Start of PRU0 RAM (where parameters from linux is read)
-// LBBO    r5, r2, 0, 4     // value at address r2 into r5 w/ offset 0 and length 4
-
 // LOAD BLOCK SIZE FROM LINUX
 MOV r7, 0; 		// Block size (value read from Linux)
 MOV r2, 0x2000;    // Start of PRU0 RAM (where parameters from linux is read)
-LBBO    r7, r2, 0, 4     // value at address r2 into r5 w/ offset=4bytes and length=4bytes
+LBBO    r7, r2, 0, 4     // value at address r2 into r7 w/ offset=4bytes and length=4bytes
 
 // Interrupt
 MOV r11, 0; 		// number of blocks written (for interrupt)
@@ -59,18 +54,6 @@ MAINLOOP: //while(1)
 		// Send block count interrupt
 		ADD r11,r11,1			// Increment block count
 		SBBO r11,r12,0,4 		// store r11 (block count) at address r12 (0x0)
-	
-//     // Here is the delay
-// 	MOV r0, r5
-
-// DELAY:
-// 	MOV r6, 100
-// 	// each DELAYDELAY is a 1 microsecond (with r6=100)
-// 	DELAYDELAY:
-// 		SUB r6,r6, 1
-// 		QBNE DELAYDELAY, r6,0 	// delay
-// 	SUB r0,r0, 1
-// 	QBNE DELAY, r0,0 	// delay
 
 	JMP MAINLOOP 		// while(1)
 

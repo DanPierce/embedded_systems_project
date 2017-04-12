@@ -15,7 +15,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 
-#define PORT "3490"  // the port users will be connecting to
+#define PORT "10010"  // the port users will be connecting to
 
 #define BACKLOG 10   // how many pending connections queue will hold
 
@@ -121,7 +121,7 @@ int main(void)
         int operationTimeMinutes;   // length of time to run host.c
         char sysCmd[40];            // string containing system command for host.c
         int eos_signal = 99;        // send this to signal EOF
-        short int dat;                    // data read from file
+        short int dat;              // data read from file
 
         /* receive test duration from client */
         if (recv(new_fd, &operationTimeMinutes, 4, 0) == -1){
@@ -141,7 +141,6 @@ int main(void)
 
 
 			while (fread(&dat, sizeof(short int),1,fpr)){
-				printf("%d\n",dat);
 
 				if (send(new_fd, &dat, sizeof(short int), 0) == -1)
                 	perror("send");
