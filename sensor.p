@@ -26,11 +26,18 @@ MOV r15, 0; 		 // timestamp value
 MOV r16, 0x10004;    // timestamp address (shared memory)
 LBBO    r15, r16, 0, 4     // value at address r16 into r15 w/ offset=4bytes and length=4bytes
 
+// Data + timestamp
+MOV 	r17, 0		// where timestamp is first nibble (4 least significant bits)
+
 // TEMP
 MOV r18, 0x10008;    // remove me 
+// <<<<
 
 // RAM limit
 MOV r4, 0x3FFF
+
+// 4 bit limit
+MOV r8, 0xF
 
 MAINLOOP: //while(1)
 	MOV r3, r7 	// Size of the Block (k)
@@ -38,13 +45,22 @@ MAINLOOP: //while(1)
 FORLOOP: // while(k > 0)
 	
 	LBBO    r15, r16, 0, 4     // value at address r16 into r15 w/ offset=4bytes and length=4bytes
-	SBBO 	r15,r18,0,4 		// store r15 at address r18 (A)
+	
+	LSL		r15, r15, 4			// r15 = r15 << 4
+
+	OR 		r17, r15, r1		// r17 = r15 | r1
+
+	// TEMP
+	// SBBO 	r17,r18,0,4 		// store r15 at address r18 (A)
+	// SBBO 	r15,r18,0,4 		// store r15 at address r18 (A)
+	// <<<<
 
 
-	SBBO r1,r2,0,4 		// store r1 (n) at address r2 (A)
+	SBBO r17,r2,0,4 		// store r1 (n + ts) at address r2 (A)
 	ADD r2,r2,4 		// A = A + 4
 	AND r2,r2,r4 		// reset A based on RAM limit
 	ADD r1,r1,1 		// n = n + 1
+	AND r1,r1,r8 		// reset n based on bit limit
 	SUB r3,r3,1			// loop counter
 	QBNE FORLOOP, r3, 0	// for loop end
 
