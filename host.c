@@ -80,11 +80,9 @@ int main (int argc, char *argv[])
    int i = 0;                // loop index of RAM
    int cnt = 0;               // total number of samples read
 
-   int stamp = 0;
-   int data = 0;
+   // int stamp = 0;
+   // int data = 0;
    int dataStamped = 0; // should be = ( (stamp << 4) | data )
-   
-   
    
 
    int datChunk[chunkSize];  // initialize array for temporary storage of data
@@ -108,11 +106,11 @@ int main (int argc, char *argv[])
 
             dataStamped=(*(ptr_0+i)); // read memory
 
-            data = dataStamped&0xF;
-            stamp = dataStamped>>4; 
+            // data = dataStamped&0xF;
+            // stamp = dataStamped>>4; 
 
-            printf("data = %d\n",data);
-            printf("stamp = %d\n",stamp);
+            // printf("data = %d\n",data);
+            // printf("stamp = %d\n",stamp);
 
             datChunk[cnt&chunkLimit] = dataStamped; // Save data chunk for later writing to file
 
@@ -125,7 +123,7 @@ int main (int argc, char *argv[])
             fwrite(datChunk,sizeof(int),chunkSize, fp);
 
 
-         printf("NEW BLOCK\n");
+         // printf("NEW BLOCK\n");
 
          numBlocksRead++;
       }
