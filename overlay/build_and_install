@@ -2,11 +2,11 @@
 
 echo "Compiling the overlay from .dts to .dtbo"
 
-dtc -O dtb -o EBB-PRU-GPIO-00A0.dtbo -b 0 -@ EBB-PRU-GPIO.dts 
+dtc -O dtb -o EBB-2PRU-GPIO-00A0.dtbo -b 0 -@ EBB-2PRU-GPIO.dts 
 
 
-sudo rm /lib/firmware/EBB-PRU-GPIO-00A0.dtbo
+sudo rm /lib/firmware/EBB-2PRU-GPIO-00A0.dtbo
 
 echo "Copying to /lib/firmware"
 
-sudo cp EBB-PRU-GPIO-00A0.dtbo /lib/firmware/
+sudo cp EBB-2PRU-GPIO-00A0.dtbo /lib/firmware/
